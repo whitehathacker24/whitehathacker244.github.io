@@ -1,0 +1,166 @@
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+ 
+// requestAnimationFrame polyfill by Erik Möller
+// fixes from Paul Irish and Tino Zijdel
+ 
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+document.getElementById("a").addEventListener("click", function() {
+  prompt("Cmd or Ctrl + C to copy", document.getElementById("a").innerHTML);
+});
+document.getElementById("b").addEventListener("click", function() {
+  prompt("Cmd or Ctrl + C to copy", document.getElementById("b").innerHTML);
+});
+
+var canvas = document.getElementById("c");
+canvas.width = 1200, canvas.height = 800;
+var context = canvas.getContext("2d");
+var width = canvas.width, height = canvas.height;
+
+var idle_image = new Image();
+idle_image.src = "http://darkfyi.com/doge_idle.png";
+var mining_image = new Image();
+mining_image.src = "http://darkfyi.com/doge_mining.png";
+var coins_image = new Image();
+coins_image.src = "http://darkfyi.com/dogecoin_pile.png";
+var doge_song = new Audio("http://darkfyi.com/DogeAdventure.mp3");
+var doge_ship_image = new Image();
+doge_ship_image.src = "http://darkfyi.com/doge_ship.png";
+var doge_earth_image = new Image();
+doge_earth_image.src = "http://darkfyi.com/doge_earth.png";
+var doge_moon_image = new Image();
+doge_moon_image.src = "http://darkfyi.com/doge_moon.png";
+var idle = true, fps=30, interval = 1000 / fps;
+
+//localStorage.doge = 0;
+//localStorage.nextupgrade = 40;
+//localStorage.nextinvest = 2500;
+//localStorage.doge_earning_speed = 1;
+//localStorage.dips = 0;
+
+if (isNaN(localStorage.doge)) {
+  localStorage.doge = 0;
+}
+if (isNaN(localStorage.nextupgrade)) {
+  localStorage.nextupgrade = 40;
+}
+if (isNaN(localStorage.nextinvest)) {
+  localStorage.nextinvest = 2500;
+}
+if (isNaN(localStorage.doge_earning_speed)) {
+  localStorage.doge_earning_speed = 1;
+}
+if (isNaN(localStorage.dips)) {
+  localStorage.dips = 0;
+}
+var doge = {
+  x: width/2,
+  y: height/2-width/10
+};
+var doge_ship = {
+  x: width,
+  y: height,
+  speed: 0
+};
+
+function mousedown() {
+  idle = false;
+}
+
+function mouseup() {
+  idle = true;
+  localStorage.doge = Number(localStorage.doge)+Number(localStorage.doge_earning_speed);
+}
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function update() {
+  setTimeout(function() {
+    requestAnimationFrame(update);
+    window.addEventListener("click", function(event) {
+      var x = event.x;
+      var y = event.y;
+      if (x > 0 && x < width && y > height-70 && y < height && Number(localStorage.doge) > Number(localStorage.nextupgrade)) {
+        localStorage.doge = Number(localStorage.doge)-Number(localStorage.nextupgrade);
+        localStorage.nextupgrade *= 5;
+        localStorage.doge_earning_speed *= 2;
+        doge_ship.speed = 18;
+        if (doge_ship.y + width/5 < 0) {
+          doge_ship.y = height;
+          doge_ship.x = width;
+          doge_ship.speed = 0;
+        }
+      }
+    });
+    //window.addEventListener("click", function(event) {
+      //var x = event.x;
+      //var y = event.y;
+      //if (x > 0 && y < height-60 && x < width && y > height-120 && Number(localStorage.doge) >= Number(localStorage.nextinvest)) {
+       // localStorage.doge = Number(localStorage.doge)-Number(localStorage.nextinvest);
+        //localStorage.dips *= 2;
+        //localStorage.nextinvest *= 3;
+        //doge_ship.speed = 18;
+        //if (doge_ship.y + width/5 < 0) {
+          //doge_ship.y = height;
+          //doge_ship.x = width;
+          //doge_ship.speed = 0;
+        //}
+      //}
+    //});
+    if (Number(localStorage.dips) > 1) {
+      localStorage.doge = Number(localStorage.doge)+Number(localStorage.dips);  
+    }
+    context.font = "50px Doge";
+    doge_song.volume = 0.4;
+    doge_song.play();
+    context.fillStyle = "#FFCD66";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(coins_image, doge.x-420, doge.y+40);
+    if (idle === true) {
+      context.drawImage(idle_image, doge.x, doge.y);  
+    } else {
+      context.drawImage(mining_image, doge.x, doge.y);
+    }
+    context.fillStyle="#FFFFFF";
+    context.fillText("DOGE: " + numberWithCommas(localStorage.getItem("doge")), 5, 50);
+    context.fillText("Lvl: " + localStorage.doge_earning_speed, 5, 100);
+    //context.fillText("Investment: " + localStorage.dips, 5, 150);
+    //context.fillStyle="#000000";
+    //context.fillRect(0, height-60, width, 60);
+    context.fillStyle="#FFCD66";
+    context.fillRect(0, height-70, width, 100);
+    context.fillStyle="#FFFFFF";
+    context.fillText("Upgrade Dogeminer: " + numberWithCommas(localStorage.nextupgrade) + " DOGE", 5, height-20);
+    //context.fillText("Invest in rocket ship: " + numberWithCommas(localStorage.nextinvest) + " DOGE", 5, height-123);
+    context.drawImage(doge_ship_image, doge_ship.x, doge_ship.y, width/5, width/5);
+    doge_ship.x -= doge_ship.speed;
+    doge_ship.y -= doge_ship.speed;
+  }, interval);
+}
+requestAnimationFrame(update);	
